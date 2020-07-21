@@ -3,24 +3,30 @@ IF msg = 6 Then
 	Set objShell = CreateObject("Shell.Application")
 	objShell.ShellExecute Path()+"\db",ArgumentsDb(), "", "runas", 1
 	Dim strMessage : strMessage="run"
-	Do Until (Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy"))
-		WScript.Sleep(5000)
+	Do Until ((Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy")))
+		WScript.Sleep(10000)
 		if (strMessage <> "stop") Then
-			strMessage = Inputbox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy, If You Want Stop This Message Type stop ","Reminder")
+			'strMessage = Inputbox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy, If You Want Stop This Message Type stop ","Reminder")
+			msg = MsgBox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy please wait ......",vbOKOnly + vbCritical,"Information")
+			strMessage = "stop"
 		end if	
 	Loop
-	objShell.ShellExecute Path()+"\wl",ArgumentsWl(), "", "runas", 1
+	if (Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy")) Then
+	   objShell.ShellExecute Path()+"\wl",ArgumentsWl(), "", "runas", 1
+	else
+	   msg = MsgBox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy",vbOKOnly + vbInformation,"Information")
+	end if   
 END IF
 Function Path()
 	Dim oFSO : Set oFSO = CreateObject("Scripting.FileSystemObject")
 	Dim sScriptDir : sScriptDir = oFSO.GetParentFolderName(WScript.ScriptFullName)
 	If Len(sScriptDir) = 3 Then sScriptDir = Left(sScriptDir,2)
-	path = sScriptDir
+	path = Left(sScriptDir,InStr(sScriptDir,"bin")-2)
 End Function
 
 Function Param(var1)
 	Set objFso = CreateObject("Scripting.FileSystemObject")
-	Set File = objFso.OpenTextFile("config.properties", 1, True)
+	Set File = objFso.OpenTextFile("bin\config.properties", 1, True)
 	Do while File.AtEndofStream <> True 
 		 theLine = "" 
 		 theLine = File.ReadLine
