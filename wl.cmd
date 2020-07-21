@@ -37,11 +37,11 @@ echo GRANT CREATE SEQUENCE TO %dbuser% ;
 echo GRANT CREATE DATABASE LINK TO %dbuser% ;
 echo GRANT CREATE PROCEDURE TO %dbuser% ;
 echo exit
-) > %directory%/%appname%/oracle/oradata/scripts/createuser.sql
+) > %directory%/oracle/oradata/scripts/createuser.sql
 
 docker exec -i -t -w /tmp %dbcontainer% /bin/bash -c "sqlplus %dbuseradmin%/%dbpwdadmin% @/opt/oracle/oradata/scripts/createuser.sql"
 
-MOVE %directory%/%appname%\dump\%dump%.dmp "%directory%/%appname%\oracle\oradata\backup\%dump%.dmp"
+MOVE %directory%\dump\%dump%.dmp "%directory%\oracle\oradata\backup\%dump%.dmp"
 
 docker exec %dbcontainer% impdp %dbuseradmin%/%dbpwdadmin%@%dbsid% dumpfile=%dump%.dmp directory=bdir logfile=%dump%.log schemas=%dbuser%
 
@@ -55,17 +55,17 @@ echo dsusername=%dbuser%
 echo dspassword=%dbpwd%
 echo dstestquery=SQL ISVALID
 echo dsmaxcapacity=1
-)> %directory%/%appname%/deploy/container-scripts/datasource.properties
+)> %directory%/deploy/container-scripts/datasource.properties
 
 (
 echo username=weblogic
 echo password=%wlpwd%
 echo JAVA_OPTIONS=-Dweblogic.StdoutDebugEnabled=false
-)> %directory%/%appname%/deploy/container-scripts/security/security.properties
+)> %directory%/deploy/container-scripts/security/security.properties
 
-docker build --build-arg APPLICATION_NAME=%appname% -t ejada-img-app %directory%/%appname%/deploy
+docker build --build-arg APPLICATION_NAME=%appname% -t ejada-img-app %directory%/deploy
 
-docker run -d --name %appname% --hostname %appname% -p 7001:7001 -v %directory%/%appname%/deploy/container-scripts/security:/u01/oracle/properties ejada-img-app
+docker run -d --name %appname% --hostname %appname% -p 7001:7001 -v %directory%/deploy/container-scripts/security:/u01/oracle/properties ejada-img-app
 
 REM For Application Open Your Browser http://localhost:7001/%appname%
 REM For Weblogic Open Your Browser http://localhost:7001/console
