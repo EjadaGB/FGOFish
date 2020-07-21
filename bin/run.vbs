@@ -1,7 +1,7 @@
 msg = MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Information")
 IF msg = 6 Then
 	Set objShell = CreateObject("Shell.Application")
-	objShell.ShellExecute Path()+"\bin\db",ArgumentsDb(), "", "runas", 1
+	objShell.ShellExecute Path()+"\db",ArgumentsDb(), "", "runas", 1
 	Dim strMessage : strMessage="run"
 	Do Until (Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy"))
 		WScript.Sleep(5000)
@@ -9,7 +9,7 @@ IF msg = 6 Then
 			strMessage = Inputbox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy, If You Want Stop This Message Type stop ","Reminder")
 		end if	
 	Loop
-	objShell.ShellExecute Path()+"\bin\wl",ArgumentsWl(), "", "runas", 1
+	objShell.ShellExecute Path()+"\wl",ArgumentsWl(), "", "runas", 1
 END IF
 Function Path()
 	Dim oFSO : Set oFSO = CreateObject("Scripting.FileSystemObject")
@@ -20,7 +20,7 @@ End Function
 
 Function Param(var1)
 	Set objFso = CreateObject("Scripting.FileSystemObject")
-	Set File = objFso.OpenTextFile("config\config.properties", 1, True)
+	Set File = objFso.OpenTextFile("config.properties", 1, True)
 	Do while File.AtEndofStream <> True 
 		 theLine = "" 
 		 theLine = File.ReadLine
