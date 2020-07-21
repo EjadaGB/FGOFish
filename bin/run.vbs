@@ -1,7 +1,7 @@
 msg = MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Information")
 IF msg = 6 Then
 	Set objShell = CreateObject("Shell.Application")
-	objShell.ShellExecute Path()+"\db",ArgumentsDb(), "", "runas", 1
+	objShell.ShellExecute Path()+"\bin\db",ArgumentsDb(), "", "runas", 1
 	Dim strMessage : strMessage="run"
 	Do Until ((Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy")))
 		WScript.Sleep(10000)
@@ -12,7 +12,7 @@ IF msg = 6 Then
 		end if	
 	Loop
 	if (Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy")) Then
-	   objShell.ShellExecute Path()+"\wl",ArgumentsWl(), "", "runas", 1
+	   objShell.ShellExecute Path()+"\bin\wl",ArgumentsWl(), "", "runas", 1
 	else
 	   msg = MsgBox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy",vbOKOnly + vbInformation,"Information")
 	end if   
