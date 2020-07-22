@@ -1,10 +1,12 @@
+
 Main()
-'TestMsg(ContainerDbExists())
+
 Sub Main()
 		If FileExists(Path()&"\deploy\"& Param("[ApplicationContainerName]") &".war") Then
 			IF MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
 				IF  MsgBox("Is Path ( "& Path() & "\deploy\container-scripts\security )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then
-					 Run()
+				      input = InputBox("For Install Database Enter Letter D For Install Weblogic Enter Letter W For Get URL Enter Letter U ", "User", "W")
+					  Installion(UCase(input))					  
 				END IF
 			END IF
 		else
@@ -12,86 +14,157 @@ Sub Main()
 		End If 
 End Sub
 
-Sub Run()
-	  Dim dbExists : dbExists = ContainerDbExists()
-	  If  Len(dbExists) = 0 Then Exit Sub
-      If dbExists Then
-		  If ContainerWlExists()  Then 
-			  UrlMsg()
-		  else
-              if ContainerDbExists() = false then 
-			      ExitMsg()
-				  Exit Sub
-			  end if
-			  Shell("wl")	
-              WScript.Sleep(20000)			  
-		  End If 	
-	  else
-		  If ContainerWlExists() = False Then  Run()	
-	  End If	
+Sub Installion(str)
+		if  str = "D" then  
+		   RunDb()
+		elseif  str = "W" then     
+		   RunWl()
+		elseif  str = "U" then     
+		   UrlMsg()	   
+		else
+		    ErrorChoiceMsg()
+		end if
 End Sub
 
-Function ContainerDbExists()
-      Dim dbExists : dbExists = ContainerExists("DataBaseContainerName")	 
-	  If  Len(dbExists) = 0 Then Exit Function
-      If dbExists = False Then
-	      dbExists = CBool(0)
-		  Shell("db")
-		  WScript.Sleep(20000)
-		  If ContainerExists("DataBaseContainerName") Then 
-			  dbExists = CBool(1)
-		  End If 	  
-	  End If
-	  ContainerDbExists = dbExists
-End Function
+Sub RunDb()
+    Dim dbExist : dbExist = ContainerHealthyStatus("DataBaseContainerName")
+    Dim dbStatus 	
+    if  Len(dbExist)=0 then
+		Shell("db")
+		msg = MsgBox("DB1 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+		Shell("DataBaseContainerName")	
+        Exit Sub
+    elseif  dbExist="healthy" then
+            dbStatus = ContainerStatus("DataBaseContainerName")
+		    if dbStatus="running" then
+				if MsgBox("DB2 - Container Name : ("& Param("[DataBaseContainerName]") &") Health Status : (" & dbExist & ") You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						msg = MsgBox("DB3 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+						Shell("DataBaseContainerName")
+						Shell("db")					
+				end if	
+				Exit Sub
+            elseif dbStatus="exited" then	
+				if MsgBox("DB4 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						msg = MsgBox("DB5 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again To Install Weblogic ",vbOKOnly + vbInformation,"Docker Information")
+						Shell("DataBaseContainerName")	
+                        Shell("startdb")    		
+				end if	
+				Exit Sub	
+			else
+				if MsgBox("DB6 - Container Name : ("& Param("[DataBaseContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						Shell("db")
+						msg = MsgBox("DB7 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+						Shell("DataBaseContainerName")	                  		
+				end if	
+				Exit Sub				
+			end if
+    elseif  dbExist="starting" then 
+		    msg = MsgBox("DB8 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+		    Shell("DataBaseContainerName")	 	
+	        Exit Sub	
+	else 
+            dbStatus = ContainerStatus("DataBaseContainerName")
+		    if dbStatus="running" then
+		        msg = MsgBox("DB9 - DataBase Is Running ",vbOKOnly + vbInformation,"Docker Information")		
+				Exit Sub
+            elseif dbStatus="exited" then	
+				if MsgBox("DB10 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						msg = MsgBox("DB11 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again To Install Weblogic ",vbOKOnly + vbInformation,"Docker Information")
+						Shell("DataBaseContainerName")	
+                        Shell("startdb")    		
+				end if	
+				Exit Sub	
+			else
+				if MsgBox("DB12 - Container Name : ("& Param("[DataBaseContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						Shell("db")
+						msg = MsgBox("DB13 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+						Shell("DataBaseContainerName")	                  		
+				end if	
+				Exit Sub				
+			end if
+		end if		
+End Sub
 
-Function ContainerWlExists()
-      Dim cbol : cbol = CBool(0)
-      If ContainerExists("ApplicationContainerName") Then
-		  cbol = CBool(1)	  
-	  End If
-	  ContainerWlExists = cbol
-End Function
-
-Dim start : start=CBool(0)
-Function ContainerExists(str)
-    Dim cbol : cbol = CBool(1)
-	Dim status : status = ContainerHealthyStatus(str)
-	if (status=Empty) then
-		cbol=CBool(0)
-	else		 
-		 if (status="healthy" Or status="unhealthy") then
-			if MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & status & ") You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-				  cbol=CBool(0)
-            Else 
-			       UnHealthyMsg(str)
-                   Exit Function			
+Sub RunWl()
+    Dim dbExist : dbExist = ContainerHealthyStatus("DataBaseContainerName")	
+    if  Len(dbExist)=0 then
+	     msg = MsgBox("WL1 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Not Found Please Open (start.cmd) file again and Write (D) to Install DataBase First ",vbOKOnly + vbInformation,"Docker Information")
+		 Exit Sub
+	elseif  dbExist="starting" then 
+		    msg = MsgBox("WL2 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+		    Shell("DataBaseContainerName")	 	
+	        Exit Sub	 
+	else	
+		Dim dbStatus : dbStatus = ContainerStatus("DataBaseContainerName")
+		if dbStatus <> "running" then
+			msg = MsgBox("WL3 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Not Running Please Open (start.cmd) file again and Write (D) to Install DataBase First ",vbOKOnly + vbInformation,"Docker Information")		
+			Exit Sub
+	     end if
+	end if	
+	Dim wlExist : wlExist = ContainerHealthyStatus("ApplicationContainerName")
+	Dim wlStatus
+    if  Len(wlExist)=0 then
+		Shell("wl")
+		msg = MsgBox("WL4 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+		Shell("ApplicationContainerName")	
+        Exit Sub
+    elseif  wlExist="healthy" then	
+		wlStatus = ContainerStatus("ApplicationContainerName")
+		if wlStatus="running" then
+			msg = MsgBox("WL5 - Weblogic Is Running ",vbOKOnly + vbInformation,"Docker Information")		
+			Exit Sub
+		elseif wlStatus="exited" then	
+			if MsgBox("WL6 - Container Name : ("& Param("[ApplicationContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+					msg = MsgBox("WL7 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					Shell("ApplicationContainerName")	
+					Shell("startwl")    		
 			end if	
-		elseif (status="starting") then	
-		    if start = false then
-				HealthyStartingMsg(str)
-				Shell(str)
-			end if	
-			WScript.Sleep(20000)
-			If ContainerHealthyStatus(str)="healthy" Then 
-				HealthyMsg(str) 
-			Else
-			    ContainerExists(str)
-			End If					
+			Exit Sub	
 		else
-		    cbol=CBool(0)
-			Support()
-		end if
-	end if
-	ContainerExists=cbol
-End Function
+			if MsgBox("WL8 - Container Name : ("& Param("[ApplicationContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  			
+					msg = MsgBox("WL9 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					Shell("ApplicationContainerName")
+					Shell("wl")
+			end if	
+			Exit Sub				
+		end if			
+    elseif  wlExist="starting" then 
+		    msg = MsgBox("WL10 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+		    Shell("ApplicationContainerName")	 	
+	        Exit Sub	
+	else 
+		wlStatus = ContainerStatus("ApplicationContainerName")
+		if wlStatus="running" then
+			msg = MsgBox("WL11 - Weblogic Is Running ",vbOKOnly + vbInformation,"Docker Information")		
+			Exit Sub
+		elseif wlStatus="exited" then	
+			if MsgBox("WL12 - Container Name : ("& Param("[ApplicationContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+					msg = MsgBox("WL13 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					Shell("ApplicationContainerName")	
+					Shell("startwl")    		
+			end if	
+			Exit Sub	
+		else
+			if MsgBox("WL14 - Container Name : ("& Param("[ApplicationContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  			
+					msg = MsgBox("WL15 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					Shell("ApplicationContainerName")
+					Shell("wl")
+			end if	
+			Exit Sub				
+		end if		
+    end If 
+End Sub
 
 Sub Shell(str)
       Set objShell = CreateObject("Shell.Application")
 	  if (str="db") then
 		  objShell.ShellExecute Path()+"\bin\"&str,ArgumentsDb(), "", "runas", 1
 	  elseif (str="wl") then
-          objShell.ShellExecute Path()+"\bin\"&str,ArgumentsWl(), "", "runas", 1   
+          objShell.ShellExecute Path()+"\bin\"&str,ArgumentsWl(), "", "runas", 1 
+      elseif (str="startdb") then
+	      objShell.ShellExecute Path()+"\bin\start",Param("[DataBaseContainerName]"), "", "runas", 0
+      elseif (str="startwl") then
+	      objShell.ShellExecute Path()+"\bin\start",Param("[ApplicationContainerName]"), "", "runas", 1		  
 	  else
           objShell.ShellExecute Path()+"\bin\stts",Param("["& str &"]"), "", "runas", 1
 		  start=CBool(1)  
@@ -186,16 +259,8 @@ Sub ShowError(strMessage)
     Err.Clear
 End Sub
 
-Sub UnHealthyMsg(str)
-	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") Install Will Exit ",vbOKOnly + vbInformation,"Docker Information")
-End Sub
-
-Sub ExitMsg()
-	msg = MsgBox("Container Name : ("& Param("[DataBaseContainerName]") &") Not Exists Install Will Exit ",vbOKOnly + vbInformation,"Docker Information")
-End Sub
-
-Sub HealthyMsg(str)
-	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") thanks for waiting ",vbOKOnly + vbInformation,"Docker Information")
+Sub ErrorChoiceMsg()
+	msg = MsgBox("The Entered Value Is Not True The Installion Will Exit Try Again . For Support Send Problem To Mhalawa@ejada.com",vbOKOnly + vbInformation,"Docker Information")
 End Sub
 
 Sub WarMsgCheck(str)
@@ -206,10 +271,3 @@ Sub UrlMsg()
 	msg = MsgBox("Open Application In (http://localhost:"& Param("[WeblogicPort]") &"/"& Param("[ApplicationContainerName]") &")           Open Weblogic In    (http://localhost:"& Param("[WeblogicPort]") &"/console)                 Open E.manager In  (https://localhost:"& Param("[DataBaseEnterpriseManagerPort]") &"/em) ",vbOKOnly + vbInformation,"URL Information")
 End Sub
 
-Sub Support()
-	   msg = MsgBox(" Error when install please call support using mail Mhalawa@ejada.com ",vbOKOnly + vbInformation,"Docker Information")
-End Sub
-
-Sub TestMsg(str)
-	msg = MsgBox(str,vbOKOnly + vbInformation,"URL Information")
-End Sub
