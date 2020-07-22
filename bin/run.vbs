@@ -1,4 +1,5 @@
 Main()
+'TestMsg(ContainerDbExists())
 Sub Main()
 		If FileExists(Path()&"\deploy\"& Param("[ApplicationContainerName]") &".war") Then
 			IF MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
@@ -12,14 +13,16 @@ Sub Main()
 End Sub
 
 Sub Run()
-      If ContainerDbExists() Then
+	  Dim wlExists : wlExists = ContainerDbExists()
+      If wlExists = Empty Then Exit Sub
+      If wlExists Then
 		  Shell("wl")
 		  WScript.Sleep(20000)
 		  If ContainerWlExists()  Then 
 			  UrlMsg()
 		  End If 	
 	  else
-	     If ContainerWlExists()  Then 
+	     If wlExists  Then 
 			  UrlMsg()
 		  Else
 			  Run()
@@ -28,15 +31,17 @@ Sub Run()
 End Sub
 
 Function ContainerDbExists()
-      Dim cbol : cbol = CBool(0)
-      If ContainerExists("DataBaseContainerName") Then
+      Dim dbExists : dbExists = ContainerExists("DataBaseContainerName")	 
+	  If  Len(dbExists) = 0 Then Exit Function
+      If dbExists = False Then
+	      dbExists = CBool(0)
 		  Shell("db")
 		  WScript.Sleep(20000)
 		  If ContainerExists("DataBaseContainerName") Then 
-			  cbol = CBool(1)
+			  dbExists = CBool(1)
 		  End If 	  
 	  End If
-	  ContainerDbExists = cbol
+	  ContainerDbExists = dbExists
 End Function
 
 Function ContainerWlExists()
@@ -48,13 +53,19 @@ Function ContainerWlExists()
 End Function
 
 Function ContainerExists(str)
-    Dim cbol : cbol = CBool(0)
-	if (ContainerHealthyStatus(str)<>"") then
-		if (ContainerHealthyStatus(str)="healthy" Or ContainerHealthyStatus(str)="unhealthy") then
-			if MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-				  cbol=CBool(1)
+    Dim cbol : cbol = CBool(1)
+	Dim status : status = ContainerHealthyStatus(str)
+	if (status=Empty) then
+		cbol=CBool(0)
+	else		 
+		 if (status="healthy" Or status="unhealthy") then
+			if MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & status & ") You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+				  cbol=CBool(0)
+            Else 
+			       UnHealthyMsg(str)
+                   Exit Function			
 			end if	
-		elseif (ContainerHealthyStatus(str)="starting") then	
+		elseif (status="starting") then	
 			HealthyStartingMsg(str)
 			WScript.Sleep(20000)
 			If ContainerHealthyStatus(str)="healthy" Then 
@@ -63,10 +74,9 @@ Function ContainerExists(str)
 			    ContainerExists(str)
 			End If					
 		else
+		    cbol=CBool(0)
 			Support()
 		end if
-	else
-		 cbol=CBool(1)
 	end if
 	ContainerExists=cbol
 End Function
