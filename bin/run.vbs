@@ -13,20 +13,21 @@ Sub Main()
 End Sub
 
 Sub Run()
-	  Dim wlExists : wlExists = ContainerDbExists()
-      If wlExists = Empty Then Exit Sub
-      If wlExists Then
-		  Shell("wl")
-		  WScript.Sleep(20000)
+	  Dim dbExists : dbExists = ContainerDbExists()
+	  If  Len(dbExists) = 0 Then Exit Sub
+      If dbExists Then
 		  If ContainerWlExists()  Then 
 			  UrlMsg()
+		  else
+              if ContainerDbExists() = false then 
+			      ExitMsg()
+				  Exit Sub
+			  end if
+			  Shell("wl")	
+              WScript.Sleep(20000)			  
 		  End If 	
 	  else
-	     If wlExists  Then 
-			  UrlMsg()
-		  Else
-			  Run()
-		  End If 	
+		  If ContainerWlExists() = False Then  Run()	
 	  End If	
 End Sub
 
@@ -52,6 +53,7 @@ Function ContainerWlExists()
 	  ContainerWlExists = cbol
 End Function
 
+Dim start : start=CBool(0)
 Function ContainerExists(str)
     Dim cbol : cbol = CBool(1)
 	Dim status : status = ContainerHealthyStatus(str)
@@ -66,7 +68,10 @@ Function ContainerExists(str)
                    Exit Function			
 			end if	
 		elseif (status="starting") then	
-			HealthyStartingMsg(str)
+		    if start = false then
+				HealthyStartingMsg(str)
+				Shell(str)
+			end if	
 			WScript.Sleep(20000)
 			If ContainerHealthyStatus(str)="healthy" Then 
 				HealthyMsg(str) 
@@ -83,7 +88,14 @@ End Function
 
 Sub Shell(str)
       Set objShell = CreateObject("Shell.Application")
-	  objShell.ShellExecute Path()+"\bin\"&str,ArgumentsDb(), "", "runas", 1
+	  if (str="db") then
+		  objShell.ShellExecute Path()+"\bin\"&str,ArgumentsDb(), "", "runas", 1
+	  elseif (str="wl") then
+          objShell.ShellExecute Path()+"\bin\"&str,ArgumentsWl(), "", "runas", 1   
+	  else
+          objShell.ShellExecute Path()+"\bin\stts",Param("["& str &"]"), "", "runas", 1
+		  start=CBool(1)  
+       end if		  
 End Sub
 
 Function Path()
@@ -176,6 +188,10 @@ End Sub
 
 Sub UnHealthyMsg(str)
 	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") Install Will Exit ",vbOKOnly + vbInformation,"Docker Information")
+End Sub
+
+Sub ExitMsg()
+	msg = MsgBox("Container Name : ("& Param("[DataBaseContainerName]") &") Not Exists Install Will Exit ",vbOKOnly + vbInformation,"Docker Information")
 End Sub
 
 Sub HealthyMsg(str)
