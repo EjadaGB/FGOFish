@@ -1,22 +1,81 @@
-msg = MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Information")
-IF msg = 6 Then
-	Set objShell = CreateObject("Shell.Application")
-	objShell.ShellExecute Path()+"\bin\db",ArgumentsDb(), "", "runas", 1
-	Dim strMessage : strMessage="run"
-	Do Until ((Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy")))
-		WScript.Sleep(10000)
-		if (strMessage <> "stop") Then
-			'strMessage = Inputbox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy, If You Want Stop This Message Type stop ","Reminder")
-			msg = MsgBox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy please wait ......",vbOKOnly + vbCritical,"Information")
-			strMessage = "stop"
-		end if	
-	Loop
-	if (Len(ContainerStatus())= Len("running") And Len(ContainerHealthyStatus())= Len("healthy")) Then
-	   objShell.ShellExecute Path()+"\bin\wl",ArgumentsWl(), "", "runas", 1
+Main()
+Sub Main()
+		If FileExists(Path()&"\deploy\"& Param("[ApplicationContainerName]") &".war") Then
+			IF MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+				IF  MsgBox("Is Path ( "& Path() & "\deploy\container-scripts\security )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then
+					 Run()
+				END IF
+			END IF
+		else
+			WarMsgCheck("ApplicationContainerName")
+		End If 
+End Sub
+
+Sub Run()
+      If ContainerDbExists() Then
+		  Shell("wl")
+		  WScript.Sleep(20000)
+		  If ContainerWlExists()  Then 
+			  UrlMsg()
+		  End If 	
+	  else
+	     If ContainerWlExists()  Then 
+			  UrlMsg()
+		  Else
+			  Run()
+		  End If 	
+	  End If	
+End Sub
+
+Function ContainerDbExists()
+      Dim cbol : cbol = CBool(0)
+      If ContainerExists("DataBaseContainerName") Then
+		  Shell("db")
+		  WScript.Sleep(20000)
+		  If ContainerExists("DataBaseContainerName") Then 
+			  cbol = CBool(1)
+		  End If 	  
+	  End If
+	  ContainerDbExists = cbol
+End Function
+
+Function ContainerWlExists()
+      Dim cbol : cbol = CBool(0)
+      If ContainerExists("ApplicationContainerName") Then
+		  cbol = CBool(1)	  
+	  End If
+	  ContainerWlExists = cbol
+End Function
+
+Function ContainerExists(str)
+    Dim cbol : cbol = CBool(0)
+	if (ContainerHealthyStatus(str)<>"") then
+		if (ContainerHealthyStatus(str)="healthy" Or ContainerHealthyStatus(str)="unhealthy") then
+			if MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+				  cbol=CBool(1)
+			end if	
+		elseif (ContainerHealthyStatus(str)="starting") then	
+			HealthyStartingMsg(str)
+			WScript.Sleep(20000)
+			If ContainerHealthyStatus(str)="healthy" Then 
+				HealthyMsg(str) 
+			Else
+			    ContainerExists(str)
+			End If					
+		else
+			Support()
+		end if
 	else
-	   msg = MsgBox("Container Name "& Param("[DataBaseContainerName]") &" still not running or unhealthy",vbOKOnly + vbInformation,"Information")
-	end if   
-END IF
+		 cbol=CBool(1)
+	end if
+	ContainerExists=cbol
+End Function
+
+Sub Shell(str)
+      Set objShell = CreateObject("Shell.Application")
+	  objShell.ShellExecute Path()+"\bin\"&str,ArgumentsDb(), "", "runas", 1
+End Sub
+
 Function Path()
 	Dim oFSO : Set oFSO = CreateObject("Scripting.FileSystemObject")
 	Dim sScriptDir : sScriptDir = oFSO.GetParentFolderName(WScript.ScriptFullName)
@@ -66,28 +125,65 @@ Function ExecStdOut(cmd)
 	'If Err.Number <> 0 Then ShowError("It failed")
 End Function 
 
+Function FileExists(FilePath)
+  Set fso = CreateObject("Scripting.FileSystemObject")
+  If fso.FileExists(FilePath) Then
+    FileExists=CBool(1)
+  Else
+    FileExists=CBool(0)
+  End If
+End Function
+
+Function DataBaseIp(container)
+	dataBaseIp = ExecStdOut("docker inspect "& Param("["&container&"]") &" --format={{.NetworkSettings.IPAddress}}")
+End Function
+
+Function ContainerStatus(container)
+	containerStatus = ExecStdOut("docker inspect "& Param("["&container&"]") &" --format {{.State.Status}}")
+End Function
+
+Function ContainerHealthyStatus(container)
+	containerHealthyStatus = ExecStdOut("docker inspect "& Param("["&container&"]") &" --format {{.State.Health.Status}}")
+End Function
+
+Function ArgumentsDb()
+	argumentsDb = Path() &" "& Param("[PasswordGitHub]") &" "& Param("[PasswordDockerHub]") &" "& Param("[PasswordDataBaseAdmin]") &" "& Param("[ApplicationContainerName]") &" "& Param("[DataBaseContainerName]") &" "& Param("[DataBasePort]") &" "& Param("[DataBaseEnterpriseManagerPort]") &" "& Param("[DataBaseSID]") 
+End Function
+
+Function ArgumentsWl()
+	argumentsWl = Path() &" "& Param("[DataBaseContainerName]") &" "& Param("[PasswordDataBaseAdmin]") &" "& Param("[DataBaseUser]") &" "& Param("[DataBasePassword]") &" "& Param("[DumpName]") &" "& DataBaseIp("DataBaseContainerName") &" "& Param("[DataBasePort]") &" "& Param("[DataBaseSID]") &" "& Param("[WeblogicDS]") &" "& Param("[ApplicationContainerName]") &" "& Param("[WeblogicPort]")
+End Function
+
+Sub HealthyStartingMsg(str)
+	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") please wait ...... ",vbOKOnly + vbInformation,"Docker Information")
+End Sub
+
 Sub ShowError(strMessage)
     WScript.Echo strMessage
     WScript.Echo Err.Number & " Srce: " & Err.Source & " Desc: " &  Err.Description
     Err.Clear
 End Sub
 
-Function DataBaseIp()
-	dataBaseIp = ExecStdOut("docker inspect "& Param("[DataBaseContainerName]") &" --format={{.NetworkSettings.IPAddress}}")
-End Function
+Sub UnHealthyMsg(str)
+	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") Install Will Exit ",vbOKOnly + vbInformation,"Docker Information")
+End Sub
 
-Function ContainerStatus()
-	containerStatus = ExecStdOut("docker inspect "& Param("[DataBaseContainerName]") &" --format {{.State.Status}}")
-End Function
+Sub HealthyMsg(str)
+	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") thanks for waiting ",vbOKOnly + vbInformation,"Docker Information")
+End Sub
 
-Function ContainerHealthyStatus()
-	containerHealthyStatus = ExecStdOut("docker inspect "& Param("[DataBaseContainerName]") &" --format {{.State.Health.Status}}")
-End Function
+Sub WarMsgCheck(str)
+	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") And War File In ("&Path()&"\deploy\) Must Be Same Word with out letters (.war) Or War File Not Found Please Check .......",vbOKOnly + vbInformation,"Setup Information")
+End Sub
 
-Function ArgumentsDb()
-	argumentsDb = Path() &" "& Param("[PasswordGitHub]") &" "& Param("[PasswordDockerHub]") &" "& Param("[PasswordDataBaseAdmin]") &" "& Param("[ApplicationName]") &" "& Param("[DataBaseContainerName]") &" "& Param("[DataBasePort]") &" "& Param("[DataBaseEnterpriseManagerPort]") &" "& Param("[DataBaseSID]") 
-End Function
+Sub UrlMsg()
+	msg = MsgBox("Open Application In (http://localhost:"& Param("[WeblogicPort]") &"/"& Param("[ApplicationContainerName]") &")           Open Weblogic In    (http://localhost:"& Param("[WeblogicPort]") &"/console)                 Open E.manager In  (https://localhost:"& Param("[DataBaseEnterpriseManagerPort]") &"/em) ",vbOKOnly + vbInformation,"URL Information")
+End Sub
 
-Function ArgumentsWl()
-	argumentsWl = Path() &" "& Param("[DataBaseContainerName]") &" "& Param("[PasswordDataBaseAdmin]") &" "& Param("[DataBaseUser]") &" "& Param("[DataBasePassword]") &" "& Param("[DumpName]") &" "& DataBaseIp() &" "& Param("[DataBasePort]") &" "& Param("[DataBaseSID]") &" "& Param("[WeblogicDS]") &" "& Param("[ApplicationName]") 
-End Function
+Sub Support()
+	   msg = MsgBox(" Error when install please call support using mail Mhalawa@ejada.com ",vbOKOnly + vbInformation,"Docker Information")
+End Sub
+
+Sub TestMsg(str)
+	msg = MsgBox(str,vbOKOnly + vbInformation,"URL Information")
+End Sub

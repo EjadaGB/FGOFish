@@ -1,6 +1,6 @@
 @echo off
 echo commamd line parameters are [%*]
-for /f "tokens=1-10* delims= " %%A in ("%*") do (
+for /f "tokens=1-11* delims= " %%A in ("%*") do (
 	set directory=%%A
 	set dbcontainer=%%B
 	set dbpwdadmin=%%C
@@ -12,10 +12,15 @@ for /f "tokens=1-10* delims= " %%A in ("%*") do (
 	set dbsid=%%I
 	set ds=%%J
 	set appname=%%K
+	set wlsport=%%L
 )
 
 set dbuseradmin=system
 set wlpwd=zSC4A4ck5S0tRpK8MpeI
+
+docker stop %appname%
+docker rm %appname%
+docker rmi ejada-img-app
 
 docker exec -i -t -w /tmp %dbcontainer% /bin/bash -c "sqlplus %dbuseradmin%/%dbpwdadmin% @/opt/oracle/oradata/scripts/directory.sql"
 (
@@ -50,7 +55,7 @@ echo dsname=FGO
 echo dsdbname=%dbsid%
 echo dsjndiname=%ds%
 echo dsdriver=oracle.jdbc.OracleDriver
-echo dsurl=jdbc:oracle:thin:@//%dbcontainer%:%dbport%/%dbsid%
+echo dsurl=jdbc:oracle:thin:@//%databaseip%:%dbport%/%dbsid%
 echo dsusername=%dbuser%
 echo dspassword=%dbpwd%
 echo dstestquery=SQL ISVALID
@@ -65,10 +70,7 @@ echo JAVA_OPTIONS=-Dweblogic.StdoutDebugEnabled=false
 
 docker build --build-arg APPLICATION_NAME=%appname% -t ejada-img-app %directory%/deploy
 
-docker run -d --name %appname% --hostname %appname% -p 7001:7001 -v %directory%/deploy/container-scripts/security:/u01/oracle/properties ejada-img-app
+docker run -d --name %appname% --hostname %appname% -p %wlsport%:7001 -v %directory%/deploy/container-scripts/security:/u01/oracle/properties ejada-img-app
 
-REM For Application Open Your Browser http://localhost:7001/%appname%
-REM For Weblogic Open Your Browser http://localhost:7001/console
-REM For Weblogic Open Your Browser https://localhost:5500/em
 
 timeout /t 20

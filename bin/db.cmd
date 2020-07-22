@@ -8,11 +8,8 @@ set dbport=%~7
 set dbemport=%~8
 set dbsid=%~9
 
-docker stop database
-docker rm database
-docker stop %appname%
-docker rm %appname%
-docker rmi ejada-img-app
+docker stop %dbcontainer%
+docker rm %dbcontainer%
 
 Rem git clone https://EjadaGB:%gitpwd%@github.com/EjadaGB/%appname%.git
 
