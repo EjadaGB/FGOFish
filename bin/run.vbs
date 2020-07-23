@@ -3,12 +3,9 @@ Main()
 
 Sub Main()
 		If FileExists(Path()&"\deploy\"& Param("[ApplicationContainerName]") &".war") Then
-			IF MsgBox("Is Path ( "& Path() & "\oracle\oradata )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-				IF  MsgBox("Is Path ( "& Path() & "\deploy\container-scripts\security )  Is Sharing in Docker Desktop resources ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then
+		              DockerDesktopMsg()
 					  'Installion()
  	                  InstallionDbWl()
-				END IF
-			END IF
 		else
 			WarMsgCheck("ApplicationContainerName")
 		End If 
@@ -19,16 +16,17 @@ Sub InstallionDbWl()
 		Wait("DataBaseContainerName")
         RunWl()
 		Wait("ApplicationContainerName") 
-        UrlMsg()		
+        UrlMsg()			
 End Sub
 
 Sub Wait(str)
-		Do While ContainerHealthyStatus(str) = "starting"
-			  WScript.Sleep (1000 * 60 * 1)
-		Loop
-		Do While ContainerStatus(str) <> "running"
-			  WScript.Sleep (1000 * 60 * 1)
-		Loop
+	if str = "DataBaseContainerName" then
+			Do While (ContainerHealthyStatus(str) <> "healthy" And ContainerStatus(str) <> "running")
+			Loop
+	elseif  str = "ApplicationContainerName" then
+			Do While (ContainerStatus(str) <> "running")
+			Loop
+	end if
 End Sub
 
 Sub Installion()
@@ -60,36 +58,46 @@ Sub RunDb(msg)
     Dim dbStatus 	
     if  Len(dbExist)=0 then
 		Shell("db")
-		msg = MsgBox("DB1 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-		Shell("DataBaseContainerName")	
+		'msg = MsgBox("DB1 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
+		if MsgBox("DB1 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+		   Shell("DataBaseContainerName")
+		end if
         Exit Sub
     elseif  dbExist="healthy" then
             dbStatus = ContainerStatus("DataBaseContainerName")
 		    if dbStatus="running" then
 				if MsgBox("DB2 - Container Name : ("& Param("[DataBaseContainerName]") &") Health Status : (" & dbExist & ") You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-						msg = MsgBox("DB3 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-						Shell("DataBaseContainerName")
-						Shell("db")					
+						'msg = MsgBox("DB3 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
+						Shell("db")	
+						if MsgBox("DB3 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						   Shell("DataBaseContainerName")
+						end if					
 				end if	
 				Exit Sub
             elseif dbStatus="exited" then	
 				if MsgBox("DB4 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-						msg = MsgBox("DB5 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-						Shell("DataBaseContainerName")	
-                        Shell("startdb")    		
+						'msg = MsgBox("DB5 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
+                        Shell("startdb") 
+						if MsgBox("DB5 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						   Shell("DataBaseContainerName")
+						end if							
 				end if	
 				Exit Sub	
 			else
-				if MsgBox("DB6 - Container Name : ("& Param("[DataBaseContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+				if MsgBox("DB6 - Container Name : ("& Param("[DataBaseContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  						
+						'msg = MsgBox("DB7 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
 						Shell("db")
-						msg = MsgBox("DB7 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-						Shell("DataBaseContainerName")	                  		
+						if MsgBox("DB7 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						   Shell("DataBaseContainerName")
+						end if		                  		
 				end if	
 				Exit Sub				
 			end if
     elseif  dbExist="starting" then 
-		    msg = MsgBox("DB8 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-		    Shell("DataBaseContainerName")	 	
+		    'msg = MsgBox("DB8 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
+			if MsgBox("DB8 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+			   Shell("DataBaseContainerName")
+			end if		
 	        Exit Sub	
 	else 
             dbStatus = ContainerStatus("DataBaseContainerName")
@@ -98,16 +106,20 @@ Sub RunDb(msg)
 				Exit Sub
             elseif dbStatus="exited" then	
 				if MsgBox("DB10 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-						msg = MsgBox("DB11 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-						Shell("DataBaseContainerName")	
-                        Shell("startdb")    		
+						Shell("startdb") 
+						'msg = MsgBox("DB11 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
+						if MsgBox("DB11 - DataBase Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						   Shell("DataBaseContainerName")
+						end if		                          		
 				end if	
 				Exit Sub	
 			else
 				if MsgBox("DB12 - Container Name : ("& Param("[DataBaseContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
 						Shell("db")
-						msg = MsgBox("DB13 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
-						Shell("DataBaseContainerName")	                  		
+						'msg = MsgBox("DB13 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg,vbOKOnly + vbInformation,"Docker Information")
+						if MsgBox("DB13 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy " & msg & " Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						   Shell("DataBaseContainerName")
+						end if	                  		
 				end if	
 				Exit Sub				
 			end if
@@ -120,8 +132,10 @@ Sub RunWl()
 	     msg = MsgBox("WL1 - Container Name : ("& Param("[DataBaseContainerName]") &") Is Not Found Please Open (start.cmd) file again and Write (D) to Install DataBase First ",vbOKOnly + vbInformation,"Docker Information")
 		 Exit Sub
 	elseif  dbExist="starting" then 
-		    msg = MsgBox("WL2 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
-		    Shell("DataBaseContainerName")	 	
+		    'msg = MsgBox("WL2 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again ",vbOKOnly + vbInformation,"Docker Information")
+		    if MsgBox("WL2 - DataBase Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Then Open (start.cmd) again Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+				Shell("DataBaseContainerName")
+			end if	 	
 	        Exit Sub	 
 	else	
 		Dim dbStatus : dbStatus = ContainerStatus("DataBaseContainerName")
@@ -134,8 +148,10 @@ Sub RunWl()
 	Dim wlStatus
     if  Len(wlExist)=0 then
 		Shell("wl")
-		msg = MsgBox("WL4 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
-		Shell("ApplicationContainerName")	
+		'msg = MsgBox("WL4 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+		if MsgBox("WL4 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+			Shell("ApplicationContainerName")
+		end if	
         Exit Sub
     elseif  wlExist="healthy" then	
 		wlStatus = ContainerStatus("ApplicationContainerName")
@@ -144,22 +160,28 @@ Sub RunWl()
 			Exit Sub
 		elseif wlStatus="exited" then	
 			if MsgBox("WL6 - Container Name : ("& Param("[ApplicationContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-					msg = MsgBox("WL7 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
-					Shell("ApplicationContainerName")	
-					Shell("startwl")    		
+					Shell("startwl")
+					'msg = MsgBox("WL7 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					if MsgBox("WL7 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						Shell("ApplicationContainerName")
+					end if	    		
 			end if	
 			Exit Sub	
 		else
 			if MsgBox("WL8 - Container Name : ("& Param("[ApplicationContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  			
-					msg = MsgBox("WL9 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
-					Shell("ApplicationContainerName")
 					Shell("wl")
+					'msg = MsgBox("WL9 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					if MsgBox("WL9 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						Shell("ApplicationContainerName")
+					end if					
 			end if	
 			Exit Sub				
 		end if			
     elseif  wlExist="starting" then 
-		    msg = MsgBox("WL10 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
-		    Shell("ApplicationContainerName")	 	
+		    'msg = MsgBox("WL10 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+		    if MsgBox("WL10 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+						Shell("ApplicationContainerName")
+			end if		 	
 	        Exit Sub	
 	else 
 		wlStatus = ContainerStatus("ApplicationContainerName")
@@ -168,16 +190,20 @@ Sub RunWl()
 			Exit Sub
 		elseif wlStatus="exited" then	
 			if MsgBox("WL12 - Container Name : ("& Param("[ApplicationContainerName]") &") Is Stopped Do You Need Start ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
-					msg = MsgBox("WL13 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
-					Shell("ApplicationContainerName")	
-					Shell("startwl")    		
+					Shell("startwl") 
+					'msg = MsgBox("WL13 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					if MsgBox("WL13 - Weblogic Starting Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+								Shell("ApplicationContainerName")
+					end if						   		
 			end if	
 			Exit Sub	
 		else
 			if MsgBox("WL14 - Container Name : ("& Param("[ApplicationContainerName]") &") Status : (" & dbStatus & ") Do You Want Reinstall ? ",vbYesNo + vbQuestion,"Docker Information") = 6 Then  			
-					msg = MsgBox("WL15 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
-					Shell("ApplicationContainerName")
 					Shell("wl")
+					'msg = MsgBox("WL15 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy ",vbOKOnly + vbInformation,"Docker Information")
+					if MsgBox("WL15 - Weblogic Installion Will Take Some Time Please Preview The Command Window When Status Changed From Starting To Healthy Do You Need Preview Status ?",vbYesNo + vbQuestion,"Docker Information") = 6 Then  
+								Shell("ApplicationContainerName")
+					end if					
 			end if	
 			Exit Sub				
 		end if		
@@ -278,9 +304,6 @@ Function ArgumentsWl()
 	argumentsWl = Path() &" "& Param("[DataBaseContainerName]") &" "& Param("[PasswordDataBaseAdmin]") &" "& Param("[DataBaseUser]") &" "& Param("[DataBasePassword]") &" "& Param("[DumpName]") &" "& DataBaseIp("DataBaseContainerName") &" "& Param("[DataBasePort]") &" "& Param("[DataBaseSID]") &" "& Param("[WeblogicDS]") &" "& Param("[ApplicationContainerName]") &" "& Param("[WeblogicPort]")
 End Function
 
-Sub HealthyStartingMsg(str)
-	msg = MsgBox("Container Name : ("& Param("["& str &"]") &") Health Status : (" & ContainerHealthyStatus(str) & ") please wait ...... ",vbOKOnly + vbInformation,"Docker Information")
-End Sub
 
 Sub ShowError(strMessage)
     WScript.Echo strMessage
@@ -298,5 +321,9 @@ End Sub
 
 Sub UrlMsg()
 	msg = MsgBox("Open Application In (http://localhost:"& Param("[WeblogicPort]") &"/"& Param("[ApplicationContainerName]") &")           Open Weblogic In    (http://localhost:"& Param("[WeblogicPort]") &"/console)                 Open E.manager In  (https://localhost:"& Param("[DataBaseEnterpriseManagerPort]") &"/em) ",vbOKOnly + vbInformation,"URL Information")
+End Sub
+
+Sub DockerDesktopMsg()
+	msg = MsgBox("If Sharing Folder For Pathes ( "& Path() & "\oracle\oradata   And   "& Path() & "\deploy\container-scripts\security ) Not Found The Docker Desktop Will Ask To Share Please Accept That When Installion ",vbOKOnly + vbInformation,"URL Information")
 End Sub
 
