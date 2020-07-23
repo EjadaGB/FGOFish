@@ -21,10 +21,10 @@ End Sub
 
 Sub Wait(str)
 	if str = "DataBaseContainerName" then
-			Do While (ContainerHealthyStatus(str) <> "healthy" And ContainerStatus(str) <> "running")
+			Do While (ContainerHealthyStatus(str) <> "healthy" And ContainerStatus(str) <> "running" ) = false
 			Loop
 	elseif  str = "ApplicationContainerName" then
-			Do While (ContainerStatus(str) <> "running")
+			Do While (ContainerStatus(str) <> "running") = true			
 			Loop
 	end if
 End Sub
@@ -45,8 +45,6 @@ Sub Choose(str)
 		    ErrorChoiceMsg()
 		end if
 End Sub
-
-
 
 Sub RunDb(msg)
     if msg = "choose" then
@@ -253,23 +251,23 @@ Function ExecStdOut(cmd)
    'Dim aRet: Set aRet = goWSH.exec(cmd)
    'execStdOut = aRet.StdOut.ReadAll()
 	With CreateObject("WScript.Shell")
-		.Run "cmd /c "&cmd&" > "&Path()&"\info.txt", 0, True
+		.Run "cmd /c "&cmd&" > "&Path()&"\bin\info.txt", 0, True
 	End With	
 	Const ForReading = 1, ForWriting = 2
 	Dim fs, txt, contents
 	Set fs = CreateObject("Scripting.FileSystemObject")
-	Set txt = fs.OpenTextFile(Path()&"\info.txt", ForReading)
+	Set txt = fs.OpenTextFile(Path()&"\bin\info.txt", ForReading)
 	contents = txt.ReadAll
 	txt.Close
 	contents = Replace(contents, vbCr, "")
 	contents = Replace(contents, vbLf, "")
-	Set txt = fs.OpenTextFile(Path()&"\info.txt", ForWriting)
+	Set txt = fs.OpenTextFile(Path()&"\bin\info.txt", ForWriting)
 	txt.Write contents
 	txt.Close	
 	Dim strOutput
 	With CreateObject("Scripting.FileSystemObject")
-		strOutput = .OpenTextFile(Path()&"\info.txt").ReadAll()
-		.DeleteFile Path()&"\info.txt"
+		strOutput = .OpenTextFile(Path()&"\bin\info.txt").ReadAll()
+						 .DeleteFile Path()&"\bin\info.txt"
 	End With
 	execStdOut = strOutput
 	'If Err.Number <> 0 Then ShowError("It failed")
@@ -327,3 +325,6 @@ Sub DockerDesktopMsg()
 	msg = MsgBox("If Sharing Folder For Pathes ( "& Path() & "\oracle\oradata   And   "& Path() & "\deploy\container-scripts\security ) Not Found The Docker Desktop Will Ask To Share Please Accept That When Installion ",vbOKOnly + vbInformation,"URL Information")
 End Sub
 
+Sub MsgTest(str)
+	msg = MsgBox(str,vbOKOnly + vbInformation,"URL Information")
+End Sub
