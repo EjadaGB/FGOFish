@@ -1,1 +1,1 @@
-WScript %cd%\bin\run.vbs
+WScript %cd%\bin\startall.vbs
