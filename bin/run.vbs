@@ -1,6 +1,6 @@
 
 Main()
-
+		
 Sub Main()
 		If FileExists(Path()&"\deploy\"& Param("[ApplicationContainerName]") &".war") Then
 		              DockerDesktopMsg()
@@ -21,10 +21,10 @@ End Sub
 
 Sub Wait(str)
 	if str = "DataBaseContainerName" then
-			Do While (ContainerHealthyStatus(str) <> "healthy" And ContainerStatus(str) <> "running" ) = false
+			Do While (ContainerHealthyStatus("DataBaseContainerName") = "healthy" And ContainerStatus("DataBaseContainerName") = "running" ) = false
 			Loop
 	elseif  str = "ApplicationContainerName" then
-			Do While (ContainerStatus(str) <> "running") = true			
+			Do While (ContainerStatus("ApplicationContainerName") = "running") = false		
 			Loop
 	end if
 End Sub
