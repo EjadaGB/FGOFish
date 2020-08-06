@@ -1,11 +1,32 @@
 
 Main()
+
+
+	'Const ForReading = 1
+	'Set objRegEx = CreateObject("VBScript.RegExp")
+	'objRegEx.Pattern = "DATABASE IS READY TO USE!"
+	'Set objFSO = CreateObject("Scripting.FileSystemObject")
+	'Set objFile = objFSO.OpenTextFile(Path()&"\bin\log.txt", ForReading)
+	'Do Until objFile.AtEndOfStream
+	'	strSearchString = objFile.ReadLine
+	'	Set colMatches = objRegEx.Execute(strSearchString)  
+	'	If colMatches.Count > 0 Then
+	'		'For Each strMatch in colMatches   
+	'			Wscript.Echo strSearchString 
+	'			exit do
+	'		'Next
+	'	End If
+	'Loop
+	'objFile.Close	
+
+
 		
 Sub Main()
 		If FileExists(Path()&"\deploy\"& Param("[ApplicationContainerName]") &".war") Then
-		              DockerDesktopMsg()
+		              if MsgBox(" Are Pathes ( "& Path() & "\oracle\oradata   And   "& Path() & "\deploy\container-scripts\security ) Sharing in Docker desktop ? Please Check from (Docker Desktop .. Settings .. Resources .. File Sharing)  " ,vbYesNo + vbQuestion,"Docker Information") = 6 Then  
 					  'Installion()
- 	                  InstallionDbWl()
+							InstallionDbWl()
+					  end if
 		else
 			WarMsgCheck("ApplicationContainerName")
 		End If 
@@ -14,6 +35,7 @@ End Sub
 Sub InstallionDbWl()
 		RunDb("") 
 		Wait("DataBaseContainerName")
+		'Wscript.sleep(1000*60*10)
         RunWl()
 		Wait("ApplicationContainerName") 
         UrlMsg()			
@@ -281,6 +303,48 @@ Function FileExists(FilePath)
     FileExists=CBool(0)
   End If
 End Function
+
+Function DbLog()
+    On Error Resume Next
+	Dim pathFile : pathFile = Path()&"\bin\log.txt"
+	With CreateObject("WScript.Shell")
+		.Run "cmd /c docker logs "& Param("[DataBaseContainerName]") &" > "&Path()&"\bin\log.txt", 0, True
+	End With		
+	Dim strOutput
+	With CreateObject("Scripting.FileSystemObject")
+		strOutput =  .OpenTextFile(pathFile).ReadAll()
+						   '.DeleteFile Path()&"\bin\log.txt"
+	End With
+	'dbLog = strOutput
+	
+	
+	Const ForReading = 1
+	Set objRegEx = CreateObject("VBScript.RegExp")
+	objRegEx.Pattern = "DATABASE IS READY TO USE!"
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objFile = objFSO.OpenTextFile(pathFile, ForReading)
+	Do Until objFile.AtEndOfStream
+		strSearchString = objFile.ReadLine
+		Set colMatches = objRegEx.Execute(strSearchString)  
+		If colMatches.Count > 0 Then
+			For Each strMatch in colMatches   
+				Wscript.Echo strSearchString 
+			Next
+		End If
+	Loop
+	objFile.Close	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+End Function 
+
+
 
 Function DataBaseIp(container)
 	dataBaseIp = ExecStdOut("docker inspect "& Param("["&container&"]") &" --format={{.NetworkSettings.IPAddress}}")
