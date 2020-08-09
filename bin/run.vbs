@@ -1,6 +1,7 @@
 
 Main()
 
+'MsgTest(DbLog())
 
 	'Const ForReading = 1
 	'Set objRegEx = CreateObject("VBScript.RegExp")
@@ -43,7 +44,8 @@ End Sub
 
 Sub Wait(str)
 	if str = "DataBaseContainerName" then
-			Do While (ContainerHealthyStatus("DataBaseContainerName") = "healthy" And ContainerStatus("DataBaseContainerName") = "running" ) = false
+			Do While DbLog() = false
+				  Wscript.sleep(1000*60*10)
 			Loop
 	elseif  str = "ApplicationContainerName" then
 			Do While (ContainerStatus("ApplicationContainerName") = "running") = false		
@@ -317,7 +319,6 @@ Function DbLog()
 	End With
 	'dbLog = strOutput
 	
-	
 	Const ForReading = 1
 	Set objRegEx = CreateObject("VBScript.RegExp")
 	objRegEx.Pattern = "DATABASE IS READY TO USE!"
@@ -327,21 +328,13 @@ Function DbLog()
 		strSearchString = objFile.ReadLine
 		Set colMatches = objRegEx.Execute(strSearchString)  
 		If colMatches.Count > 0 Then
-			For Each strMatch in colMatches   
-				Wscript.Echo strSearchString 
-			Next
+			dbLog=CBool(1)
+			objFile.Close	
+			exit function
 		End If
 	Loop
 	objFile.Close	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+    dbLog=CBool(0)
 End Function 
 
 

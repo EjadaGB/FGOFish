@@ -15,14 +15,11 @@ for /f "tokens=1-11* delims= " %%A in ("%*") do (
 	set wlsport=%%L
 )
 
-set dbuseradmin=system
-set wlpwd=zSC4A4ck5S0tRpK8MpeI
-
 docker stop %appname%
 docker rm %appname%
 docker rmi ejada-img-app
 
-docker exec -i -t -w /tmp %dbcontainer% /bin/bash -c "sqlplus %dbuseradmin%/%dbpwdadmin% @/opt/oracle/oradata/scripts/directory.sql"
+docker exec -i -t -w /tmp %dbcontainer% /bin/bash -c "sqlplus system/%dbpwdadmin% @/opt/oracle/oradata/scripts/directory.sql"
 (
 echo ALTER SESSION SET "_ORACLE_SCRIPT"=TRUE;
 echo CREATE TABLESPACE TS_%dbuser%_DATA DATAFILE 'TS_%dbuser%_DATA.dbf' SIZE 200m reuse;
@@ -44,11 +41,11 @@ echo GRANT CREATE PROCEDURE TO %dbuser% ;
 echo exit
 ) > %directory%/oracle/oradata/scripts/createuser.sql
 
-docker exec -i -t -w /tmp %dbcontainer% /bin/bash -c "sqlplus %dbuseradmin%/%dbpwdadmin% @/opt/oracle/oradata/scripts/createuser.sql"
+docker exec -i -t -w /tmp %dbcontainer% /bin/bash -c "sqlplus system/%dbpwdadmin% @/opt/oracle/oradata/scripts/createuser.sql"
 
 MOVE %directory%\dump\%dump%.dmp "%directory%\oracle\oradata\backup\%dump%.dmp"
 
-docker exec %dbcontainer% impdp %dbuseradmin%/%dbpwdadmin%@%dbsid% dumpfile=%dump%.dmp directory=bdir logfile=%dump%.log schemas=%dbuser%
+docker exec %dbcontainer% impdp system/%dbpwdadmin%@%dbsid% dumpfile=%dump%.dmp directory=bdir logfile=%dump%.log schemas=%dbuser%
 
 (
 echo dsname=FGO
@@ -64,7 +61,7 @@ echo dsmaxcapacity=1
 
 (
 echo username=weblogic
-echo password=%wlpwd%
+echo password=zSC4A4ck5S0tRpK8MpeI
 echo JAVA_OPTIONS=-Dweblogic.StdoutDebugEnabled=false
 )> %directory%/deploy/container-scripts/security/security.properties
 
